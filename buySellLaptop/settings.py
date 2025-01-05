@@ -47,6 +47,8 @@ TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
 TELEGRAM_SESSIONS = os.getenv("TELEGRAM_SESSIONS")
 TELEGRAM_CHANNELS = os.getenv("TELEGRAM_CHANNELS", "").split(",")
 
+GEMENI_API_KEY = os.getenv("GEMENI_API_KEY")
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
