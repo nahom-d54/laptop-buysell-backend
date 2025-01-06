@@ -1,6 +1,11 @@
-from django.urls import path
-from .views import LaptopPostListView
+from .views import LaptopResourceView
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = [
-    path('laptops/', LaptopPostListView.as_view(), name='laptop-list'),
-]
+router = DefaultRouter()
+
+router.register("laptops", LaptopResourceView, basename="laptop")
+
+
+urlpatterns = []
+
+urlpatterns += router.urls
