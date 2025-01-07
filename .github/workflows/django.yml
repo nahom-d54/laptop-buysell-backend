@@ -16,10 +16,10 @@ jobs:
       with:
         # 'server', 'username', 'password', 'port', 'protocol', 'local-dir', 'server-dir', 'state-name', 
         # 'dry-run', 'dangerous-clean-slate', 'exclude', 'log-level', 'security'
+        protocol: ftps
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASS }}
-        protocol: ftps
         server-dir: ~/domains/laptops.madiba.serv00.net/public_python/
         local-dir: ./
         exclude: |
