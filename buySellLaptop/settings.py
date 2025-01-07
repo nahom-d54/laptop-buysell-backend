@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+import dj_database_url
 
 load_dotenv()
 
@@ -146,6 +147,7 @@ TELEGRAM_CHANNELS = os.getenv("TELEGRAM_CHANNELS", "").split(",")
 
 GEMENI_API_KEY = os.getenv("GEMENI_API_KEY")
 
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
 
@@ -194,6 +196,9 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+db_from_env = dj_database_url.config(conn_max_age=600)
+DATABASES["default"].update(db_from_env)
 
 
 # Password validation
