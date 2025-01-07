@@ -132,14 +132,10 @@ async def scrape_laptops_async():
                             channel, limit=50, offset_id=last_message_id
                         ):
                             if message.caption:
-                                logger.info(f"Message: {message.caption}")
                                 messages_with_captions += 1
 
                             caption = message.caption
                             status, processed_product = process_product(caption)
-                            logger.info(
-                                f"Processed product: {processed_product}, {caption}"
-                            )
                             if status:
                                 try:
                                     await sync_to_async(
@@ -193,9 +189,10 @@ def scrape_laptops():
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
+    interval_minute = settings.SCHEDULE_INTERVAL
     scheduler.add_job(
         scrape_laptops,
-        trigger=IntervalTrigger(minutes=30),
+        trigger=IntervalTrigger(minutes=int(interval_minute)),
         id="Scrapelaptops",
         replace_existing=True,
     )
