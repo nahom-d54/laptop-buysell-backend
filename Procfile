@@ -1,1 +1,1 @@
-web: gunicorn buySellLaptop.wsgi -log-file -
+web: gunicorn buySellLaptop.wsgi
