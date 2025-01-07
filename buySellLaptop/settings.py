@@ -19,6 +19,7 @@ SECRET_KEY = "django-insecure-8p6te)s!5%98r)jtlct08os3%lbh(c$ab+g*)w!s-z40bv@!d6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
 ALLOWED_HOSTS = []
 
 ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS", "").split(",")
@@ -27,6 +28,7 @@ ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS", "").split(",")
 # Application definition
 
 if os.getenv("ENV") == "production":
+    DEBUG = False
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
