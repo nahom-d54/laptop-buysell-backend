@@ -1,9 +1,11 @@
 annotated-types==0.7.0
+APScheduler==3.11.0
 asgiref==3.8.1
 cachetools==5.5.0
 certifi==2024.12.14
 charset-normalizer==3.4.1
 Django==5.1.4
+django-phonenumber-field==8.0.0
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 google-ai-generativelanguage==0.6.10
@@ -17,6 +19,7 @@ grpcio==1.69.0
 grpcio-status==1.69.0
 httplib2==0.22.0
 idna==3.10
+phonenumbers==8.13.52
 proto-plus==1.25.0
 protobuf==5.29.2
 pyaes==1.6.1
@@ -35,5 +38,6 @@ sqlparse==0.5.3
 TgCrypto==1.2.5
 tqdm==4.67.1
 typing_extensions==4.12.2
+tzlocal==5.2
 uritemplate==4.1.1
 urllib3==2.3.0
