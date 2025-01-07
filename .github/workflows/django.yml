@@ -8,9 +8,13 @@ on:
 
 jobs:
   build:
+    name: Deploy django
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
     - name: Deploy to FTP
       uses: SamKirkland/FTP-Deploy-Action@4.1.0
       with:
