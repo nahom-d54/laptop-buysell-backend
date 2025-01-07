@@ -1,4 +1,8 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 
 
 class LaptopPost(models.Model):
@@ -29,3 +33,23 @@ class LaptopPost(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Review(models.Model):
+    product = models.ForeignKey(
+        LaptopPost, related_name="reviews", on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.PositiveIntegerField()  # 1 to 5, for example
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.product.name} - {self.user.username}"
+
+    class Meta:
+        unique_together = (
+            "product",
+            "user",
+        )  # Prevent duplicate reviews by the same user for the same product

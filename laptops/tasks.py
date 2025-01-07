@@ -111,6 +111,7 @@ def process_product(product):
 
 
 async def scrape_laptops_async():
+    logger.info("Starting to scrape telegram channels")
     app = Client(
         "LaptopScraper",
         api_id=settings.TELEGRAM_API_ID,
