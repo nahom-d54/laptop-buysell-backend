@@ -1,12 +1,21 @@
-from .views import LaptopResourceView, ReviewViewset
+from .views import LaptopResourceView, ReviewRetrieveUpdateDestroyAPIView, ReviewList
 from rest_framework.routers import DefaultRouter
+from django.urls import path
+
 
 router = DefaultRouter()
 
 router.register("laptops", LaptopResourceView, basename="laptop")
-router.register("reviews", ReviewViewset, basename="review")
 
 
-urlpatterns = []
+urlpatterns = [
+    path("reviews", ReviewList.as_view(), name="review-list"),
+    path(
+        "reviews/:id",
+        ReviewRetrieveUpdateDestroyAPIView.as_view(),
+        name="review-get-update-delete",
+    ),
+]
 
+print(router.urls)
 urlpatterns += router.urls
