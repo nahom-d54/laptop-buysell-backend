@@ -1,0 +1,33 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Deploy django
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    
+    - name: Deploy to FTP
+      uses: SamKirkland/FTP-Deploy-Action@4.1.0
+      with:
+        # 'server', 'username', 'password', 'port', 'protocol', 'local-dir', 'server-dir', 'state-name', 
+        # 'dry-run', 'dangerous-clean-slate', 'exclude', 'log-level', 'security'
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASS }}
+        server-dir: ~/domains/laptops.madiba.serv00.net/public_python/
+        local-dir: ./
+        exclude: |
+            **/*.map # Exclude source maps
+            **/node_modules/** # Exclude node_modules
+            **/.git/** # Exclude git files
+      
