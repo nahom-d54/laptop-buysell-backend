@@ -146,6 +146,13 @@ TELEGRAM_CHANNELS = os.getenv("TELEGRAM_CHANNELS", "").split(",")
 
 GEMENI_API_KEY = os.getenv("GEMENI_API_KEY")
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
+
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -154,6 +161,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = "buySellLaptop.urls"
