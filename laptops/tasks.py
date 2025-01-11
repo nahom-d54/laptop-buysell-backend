@@ -9,7 +9,8 @@ import re
 import json
 import google.generativeai as genai
 import cloudinary
-
+import time
+from collections import deque
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -55,6 +56,37 @@ If any details are missing in the input, use null or an empty string. Ensure the
 
 genai.configure(api_key=settings.GEMENI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=ai_system_prompt)
+
+
+class RateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        """
+        Initialize the rate limiter.
+        :param max_requests: Maximum number of requests allowed in the time window.
+        :param window_seconds: Time window in seconds.
+        """
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = deque()  # Track timestamps of requests
+
+    def check_and_wait(self):
+        """
+        Check the current rate limit usage and sleep if the limit has been reached.
+        """
+        current_time = time.time()
+
+        # Remove timestamps outside the current window
+        while self.requests and self.requests[0] < current_time - self.window_seconds:
+            self.requests.popleft()
+
+        if len(self.requests) >= self.max_requests:
+            # Calculate sleep time until the oldest request falls out of the window
+            sleep_time = self.window_seconds - (current_time - self.requests[0])
+            print(f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds...")
+            time.sleep(sleep_time)
+
+        # Record the new request timestamp
+        self.requests.append(current_time)
 
 
 # Uploading media from the server
@@ -105,17 +137,31 @@ def get_json_response(data):
     return match[0] if match else {}
 
 
+@sync_to_async
 def process_product(product):
     if not product:
         return False, {}
-    response = model.generate_content(product)
-    json_response = get_json_response(response.text)
+    status, verified_product = [False, {}]
+    rate_limiter = RateLimiter(max_requests=15, window_seconds=60)  # 15 RPM
+    try:
+        rate_limiter.check_and_wait()
+        response = model.generate_content(product)
+        json_response = get_json_response(response.text)
 
-    final_response = json.loads(json_response)
+        final_response = json.loads(json_response)
 
-    status, verified_product = verify_laptop_dict(final_response)
+        status, verified_product = verify_laptop_dict(final_response)
+    except Exception as e:
+        logger.error(f"Error processing product: {str(e)}")
+
+        return status, verified_product
 
     return status, verified_product
+
+
+@sync_to_async
+def get_last_message_from_db(channel_id):
+    return LaptopPost.objects.filter(channel_id=channel_id).order_by("-post_id").first()
 
 
 async def scrape_laptops_async():
@@ -135,9 +181,9 @@ async def scrape_laptops_async():
     try:
         async with app:
             for channel in channels:
-                last_message_from_db = await sync_to_async(
-                    LaptopPost.objects.order_by("-post_id").first()
-                )(channel_id=channel)
+                last_message_from_db = await get_last_message_from_db(
+                    channel_id=channel
+                )
 
                 last_post_id = (
                     last_message_from_db.post_id if last_message_from_db else 0
@@ -146,18 +192,20 @@ async def scrape_laptops_async():
                 while messages_with_captions < max_messages:
                     try:
                         async for message in app.get_chat_history(
-                            channel, limit=50, offset_id=last_message_id
+                            chat_id=int(channel), limit=50, offset_id=last_message_id
                         ):
                             if message.id <= last_post_id:
                                 break
 
                             if message.caption:
                                 messages_with_captions += 1
+                                logger.info(f"Processing message: {message.id}")
                             else:
                                 continue
 
                             caption = message.caption
-                            status, processed_product = process_product(caption)
+
+                            status, processed_product = await process_product(caption)
 
                             if status:
                                 try:
