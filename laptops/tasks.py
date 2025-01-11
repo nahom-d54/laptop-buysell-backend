@@ -58,6 +58,32 @@ genai.configure(api_key=settings.GEMENI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=ai_system_prompt)
 
 
+class AsyncRateLimiter:
+    def __init__(self, max_requests, window_seconds):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.request_times = deque()
+
+    async def check_and_wait(self):
+        current_time = time.time()
+
+        # Remove outdated request timestamps
+        while (
+            self.request_times
+            and current_time - self.request_times[0] > self.window_seconds
+        ):
+            self.request_times.popleft()
+
+        # Check if the rate limit is exceeded
+        if len(self.request_times) >= self.max_requests:
+            wait_time = self.window_seconds - (current_time - self.request_times[0])
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+
+        # Log the current request
+        self.request_times.append(time.time())
+
+
 class RateLimiter:
     def __init__(self, max_requests: int, window_seconds: int):
         """
@@ -137,24 +163,32 @@ def get_json_response(data):
     return match[0] if match else {}
 
 
-@sync_to_async
-def process_product(product):
+async def process_product(product):
     if not product:
         return False, {}
-    status, verified_product = [False, {}]
-    rate_limiter = RateLimiter(max_requests=15, window_seconds=60)  # 15 RPM
+
+    status, verified_product = False, {}
+    rate_limiter = AsyncRateLimiter(max_requests=15, window_seconds=60)  # 15 RPM
+
     try:
-        rate_limiter.check_and_wait()
-        response = model.generate_content(product)
+        # Wait for rate limiter
+        await rate_limiter.check_and_wait()
+    except Exception as e:
+        logger.error(f"Rate limiter failed: {str(e)}")
+        return status, verified_product  # Return failure in case of rate limiter issue
+
+    try:
+        # Generate content with genai
+        response = await model.generate_content_async(product)
         json_response = get_json_response(response.text)
 
+        # Parse and verify the response
         final_response = json.loads(json_response)
-
         status, verified_product = verify_laptop_dict(final_response)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse JSON response: {str(e)}")
     except Exception as e:
-        logger.error(f"Error processing product: {str(e)}")
-
-        return status, verified_product
+        logger.error(f"Error in genai processing or verification: {str(e)}")
 
     return status, verified_product
 
@@ -175,12 +209,12 @@ async def scrape_laptops_async():
     channels = settings.TELEGRAM_CHANNELS
 
     max_messages = 20
-    messages_with_captions = 0
-    last_message_id = 0
 
     try:
         async with app:
             for channel in channels:
+                logger.info(f"Processing channel: {channel}")
+
                 last_message_from_db = await get_last_message_from_db(
                     channel_id=channel
                 )
@@ -188,18 +222,31 @@ async def scrape_laptops_async():
                 last_post_id = (
                     last_message_from_db.post_id if last_message_from_db else 0
                 )
+                messages_with_captions = 0
+                last_message_id = 0
+                track = set()
 
                 while messages_with_captions < max_messages:
+                    should_break = False
                     try:
                         async for message in app.get_chat_history(
                             chat_id=int(channel), limit=50, offset_id=last_message_id
                         ):
+                            if message.id in track:
+                                # it will stop it if end of channel messsage
+                                should_break = True
+                            track.add(message.id)
+
                             if message.id <= last_post_id:
+                                logger.info(
+                                    f"Skipping message already processed: {message.id}"
+                                )
+                                should_break = True
                                 break
 
+                            logger.info(f"Processing message: {message.id}")
                             if message.caption:
                                 messages_with_captions += 1
-                                logger.info(f"Processing message: {message.id}")
                             else:
                                 continue
 
@@ -235,11 +282,19 @@ async def scrape_laptops_async():
                                 break
 
                     except FloodWait as e:
-                        print(f"Rate limit exceeded. Waiting for {e.value} seconds...")
+                        logger.info(
+                            f"Rate limit exceeded. Waiting for {e.value} seconds..."
+                        )
                         await asyncio.sleep(
                             e.value
                         )  # Wait for the required time before retrying
                         continue
+                    except Exception as e:
+                        logger.error(f"Error processing channel: {str(e)}")
+                        break
+
+                    if should_break:
+                        break
 
                     if last_message_id is None:
                         break
