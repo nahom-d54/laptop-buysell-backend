@@ -4,6 +4,7 @@ asgiref==3.8.1
 cachetools==5.5.0
 certifi==2024.12.14
 charset-normalizer==3.4.1
+cloudinary==1.42.1
 dj-database-url==2.3.0
 Django==5.1.4
 django-phonenumber-field==8.0.0
@@ -38,6 +39,7 @@ PySocks==1.7.1
 python-dotenv==1.0.1
 requests==2.32.3
 rsa==4.9
+six==1.17.0
 sqlparse==0.5.3
 TgCrypto==1.2.5
 tqdm==4.67.1

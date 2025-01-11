@@ -7,6 +7,7 @@ from pyrogram.errors import FloodWait
 import re
 import json
 import google.generativeai as genai
+import cloudinary
 
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -53,6 +54,32 @@ If any details are missing in the input, use null or an empty string. Ensure the
 
 genai.configure(api_key=settings.GEMENI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=ai_system_prompt)
+
+
+# Uploading media from the server
+def upload_file_to_server(file_path):
+    # Define the upload preset details
+    upload_preset_name = "laptop_images"
+    upload_preset_options = {
+        "unsigned": False,
+        "folder": "laptops",
+        "categorization": "aws_rek_tagging",
+        "auto_tagging": 0.9,
+    }
+
+    # Create the upload preset using the SDK
+    upload_preset = cloudinary.api.create_upload_preset(
+        name=upload_preset_name, settings=upload_preset_options
+    )
+
+    # Check if the upload preset was created successfully
+    if upload_preset.get("name") == upload_preset_name:
+        print("Upload preset created successfully.")
+    else:
+        print("Failed to create upload preset.")
+
+    result = cloudinary.uploader.upload(file_path, upload_preset="my_upload_preset")
+    return result["secure_url"]
 
 
 def verify_laptop_dict(data):
@@ -181,11 +208,11 @@ async def scrape_laptops_async():
                 # customize based on the channel so i might need to make it dynamic
 
     except ValueError as e:
-        logger.error(f"Error processing channel {channel}: {str(e)}")
+        logger.error(f"Error processing channel : {str(e)}")
     except KeyError as e:
-        logger.error(f"KeyError processing channel {channel}: {str(e)}")
+        logger.error(f"KeyError processing channel : {str(e)}")
     except Exception as e:
-        logger.error(f"Unexpected error processing channel {channel}: {str(e)}")
+        logger.error(f"Unexpected error processing channel : {str(e)}")
 
 
 def scrape_laptops():
