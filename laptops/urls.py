@@ -2,11 +2,8 @@ from .views import LaptopResourceView, ReviewRetrieveUpdateDestroyAPIView, Revie
 from rest_framework.routers import DefaultRouter
 from django.urls import path
 
-
 router = DefaultRouter()
-
 router.register("laptops", LaptopResourceView, basename="laptop")
-
 
 urlpatterns = [
     path("reviews", ReviewList.as_view(), name="review-list"),
