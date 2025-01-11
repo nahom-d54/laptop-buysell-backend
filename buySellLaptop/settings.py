@@ -28,6 +28,16 @@ ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS", "").split(",")
 # Application definition
 
 if os.getenv("ENV") == "production":
+    # settings.py
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    )
     DEBUG = False
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
     STATIC_URL = "/static/"

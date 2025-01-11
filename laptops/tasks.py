@@ -9,7 +9,6 @@ import re
 import json
 import google.generativeai as genai
 import cloudinary
-from django.db.models.functions import Cast
 
 
 from apscheduler.schedulers.background import BackgroundScheduler
