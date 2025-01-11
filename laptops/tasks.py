@@ -134,9 +134,13 @@ async def scrape_laptops_async():
                         ):
                             if message.caption:
                                 messages_with_captions += 1
+                            else:
+                                logger.info("Skipping message without caption")
+                                continue
 
                             caption = message.caption
                             status, processed_product = process_product(caption)
+
                             if status:
                                 try:
                                     await sync_to_async(
@@ -157,11 +161,11 @@ async def scrape_laptops_async():
                                     raise e
                             else:
                                 logger.error(
-                                    f"Error processing product: {processed_product}"
+                                    f"Error processing product: {processed_product}, {caption}"
                                 )
 
                             last_message_id = message.id
-                            if len(messages_with_captions) >= max_messages:
+                            if messages_with_captions >= max_messages:
                                 break
 
                     except FloodWait as e:
