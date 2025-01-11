@@ -21,7 +21,7 @@ class LaptopPost(models.Model):
 
     description = models.TextField(null=True, blank=True)
     price = models.CharField(max_length=50, null=True, blank=True)
-    post_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    post_id = models.IntegerField(unique=True)
     channel_name = models.CharField(max_length=255)
     channel_id = models.CharField(max_length=50, null=True)
     posted_at = models.DateTimeField()

@@ -1,4 +1,5 @@
 import asyncio
+import cloudinary.uploader
 from pyrogram import Client
 from django.conf import settings
 from django.utils import timezone
@@ -8,6 +9,7 @@ import re
 import json
 import google.generativeai as genai
 import cloudinary
+from django.db.models.functions import Cast
 
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -58,27 +60,7 @@ model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=ai_system_p
 
 # Uploading media from the server
 def upload_file_to_server(file_path):
-    # Define the upload preset details
-    upload_preset_name = "laptop_images"
-    upload_preset_options = {
-        "unsigned": False,
-        "folder": "laptops",
-        "categorization": "aws_rek_tagging",
-        "auto_tagging": 0.9,
-    }
-
-    # Create the upload preset using the SDK
-    upload_preset = cloudinary.api.create_upload_preset(
-        name=upload_preset_name, settings=upload_preset_options
-    )
-
-    # Check if the upload preset was created successfully
-    if upload_preset.get("name") == upload_preset_name:
-        print("Upload preset created successfully.")
-    else:
-        print("Failed to create upload preset.")
-
-    result = cloudinary.uploader.upload(file_path, upload_preset="my_upload_preset")
+    result = cloudinary.uploader.upload(file_path, public_id="laptop_images")
     return result["secure_url"]
 
 
@@ -154,15 +136,25 @@ async def scrape_laptops_async():
     try:
         async with app:
             for channel in channels:
+                last_message_from_db = await sync_to_async(
+                    LaptopPost.objects.order_by("-post_id").first()
+                )(channel_id=channel)
+
+                last_post_id = (
+                    last_message_from_db.post_id if last_message_from_db else 0
+                )
+
                 while messages_with_captions < max_messages:
                     try:
                         async for message in app.get_chat_history(
                             channel, limit=50, offset_id=last_message_id
                         ):
+                            if message.id <= last_post_id:
+                                break
+
                             if message.caption:
                                 messages_with_captions += 1
                             else:
-                                logger.info("Skipping message without caption")
                                 continue
 
                             caption = message.caption
