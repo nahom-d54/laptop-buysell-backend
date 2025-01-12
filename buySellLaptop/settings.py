@@ -18,6 +18,7 @@ SECRET_KEY = "django-insecure-8p6te)s!5%98r)jtlct08os3%lbh(c$ab+g*)w!s-z40bv@!d6
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+PRODUCTION = os.getenv("ENV") == "production"
 
 
 ALLOWED_HOSTS = ["127.0.0.1"]
@@ -27,24 +28,9 @@ ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS", "").split(",")
 
 # Application definition
 
-if os.getenv("ENV") == "production":
-    # settings.py
-    import cloudinary
-    import cloudinary.uploader
-    import cloudinary.api
-
-    cloudinary.config(
-        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-        api_key=os.getenv("CLOUDINARY_API_KEY"),
-        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    )
+if PRODUCTION:
     DEBUG = False
-    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-    STATIC_URL = "/static/"
 
-    STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
-    MEDIA_URL = "/media/"
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -132,6 +118,7 @@ INSTALLED_APPS = [
     "phonenumber_field",
     "laptops",
     "users",
+    "storages",
 ]
 
 AUTH_USER_MODEL = "users.CustomUser"
@@ -164,7 +151,7 @@ TELEGRAM_SESSIONS = os.getenv("TELEGRAM_SESSIONS")
 TELEGRAM_CHANNELS = os.getenv("TELEGRAM_CHANNELS", "").split(",")
 SCHEDULE_INTERVAL = os.getenv("SCHEDULE_INTERVAL", 20)
 
-GEMENI_API_KEY = os.getenv("GEMENI_API_KEY")
+GEMENI_API_KEY = os.getenv("GEMENI_API_KEY", "").split(",")
 
 
 MIDDLEWARE = [
@@ -177,8 +164,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 ROOT_URLCONF = "buySellLaptop.urls"
 
@@ -210,11 +195,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-if os.getenv("ENV") == "production":
-    db_from_env = dj_database_url.config(conn_max_age=600)
-    DATABASES["default"].update(db_from_env)
-    MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE
 
 
 # Password validation
@@ -257,3 +237,57 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# custom fields
+
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
+
+if PRODUCTION:
+    FTP_HOST = os.getenv("FTP_SERVER")
+    FTP_USERNAME = os.getenv("FTP_USERNAME")
+    FTP_PASSWORD = os.getenv("FTP_PASSWORD")
+
+    ASSETS_URL = os.getenv("ASSETS_URL")
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.sftpstorage.SFTPStorage",
+            "OPTIONS": {
+                "host": FTP_HOST,
+                "base_url": ASSETS_URL,
+                "params": {
+                    "username": FTP_USERNAME,
+                    "password": FTP_PASSWORD,
+                    "key_filename": None,
+                    "allow_agent": False,
+                },
+                "interactive": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.sftpstorage.SFTPStorage",
+            "OPTIONS": {
+                "host": FTP_HOST,
+                "base_url": ASSETS_URL,
+                "params": {
+                    "username": FTP_USERNAME,
+                    "password": FTP_PASSWORD,
+                    "key_filename": None,
+                    "allow_agent": False,
+                },
+                "interactive": False,
+            },
+        },
+    }
+
+    db_from_env = dj_database_url.config(conn_max_age=600)
+    DATABASES["default"].update(db_from_env)
+
+    #
+if not PRODUCTION:
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+    STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE

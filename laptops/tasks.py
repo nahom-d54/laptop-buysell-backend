@@ -1,5 +1,4 @@
 import asyncio
-import cloudinary.uploader
 from pyrogram import Client
 from django.conf import settings
 from django.utils import timezone
@@ -8,13 +7,13 @@ from pyrogram.errors import FloodWait
 import re
 import json
 import google.generativeai as genai
-import cloudinary
 import time
 from collections import deque
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from asgiref.sync import sync_to_async
+from itertools import cycle
 
 import logging
 
@@ -52,10 +51,6 @@ If any details are missing in the input, use null or an empty string. Ensure the
     "price": "$1200"
 }
 """
-
-
-genai.configure(api_key=settings.GEMENI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=ai_system_prompt)
 
 
 class AsyncRateLimiter:
@@ -115,12 +110,6 @@ class RateLimiter:
         self.requests.append(current_time)
 
 
-# Uploading media from the server
-def upload_file_to_server(file_path):
-    result = cloudinary.uploader.upload(file_path, public_id="laptop_images")
-    return result["secure_url"]
-
-
 def verify_laptop_dict(data):
     """
     Verify if the input dictionary matches the expected laptop data format.
@@ -163,12 +152,21 @@ def get_json_response(data):
     return match[0] if match else {}
 
 
+key_pool = cycle(settings.GEMENI_API_KEY)
+
+
 async def process_product(product):
+    api_key = next(key_pool)
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        "gemini-1.5-flash", system_instruction=ai_system_prompt
+    )
     if not product:
         return False, {}
 
     status, verified_product = False, {}
-    rate_limiter = AsyncRateLimiter(max_requests=15, window_seconds=60)  # 15 RPM
+    rate_limiter = AsyncRateLimiter(max_requests=42, window_seconds=60)  # 15 RPM
 
     try:
         # Wait for rate limiter
