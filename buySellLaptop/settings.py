@@ -257,6 +257,7 @@ if PRODUCTION:
             "OPTIONS": {
                 "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
                 "base_url": ASSETS_URL,
+                "allow_overwrite": True,
             },
         },
         "staticfiles": {
@@ -264,6 +265,7 @@ if PRODUCTION:
             "OPTIONS": {
                 "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
                 "base_url": ASSETS_URL,
+                "allow_overwrite": True,
             },
         },
     }
