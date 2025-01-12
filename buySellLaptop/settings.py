@@ -253,31 +253,17 @@ if PRODUCTION:
     ASSETS_URL = os.getenv("ASSETS_URL")
     STORAGES = {
         "default": {
-            "BACKEND": "storages.backends.sftpstorage.SFTPStorage",
+            "BACKEND": "storages.backends.ftp.FTPStorage",
             "OPTIONS": {
-                "host": FTP_HOST,
+                "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
                 "base_url": ASSETS_URL,
-                "params": {
-                    "username": FTP_USERNAME,
-                    "password": FTP_PASSWORD,
-                    "key_filename": None,
-                    "allow_agent": False,
-                },
-                "interactive": False,
             },
         },
         "staticfiles": {
-            "BACKEND": "storages.backends.sftpstorage.SFTPStorage",
+            "BACKEND": "storages.backends.ftp.FTPStorage",
             "OPTIONS": {
-                "host": FTP_HOST,
+                "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
                 "base_url": ASSETS_URL,
-                "params": {
-                    "username": FTP_USERNAME,
-                    "password": FTP_PASSWORD,
-                    "key_filename": None,
-                    "allow_agent": False,
-                },
-                "interactive": False,
             },
         },
     }
