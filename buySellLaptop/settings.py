@@ -18,6 +18,7 @@ SECRET_KEY = "django-insecure-8p6te)s!5%98r)jtlct08os3%lbh(c$ab+g*)w!s-z40bv@!d6
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+
 PRODUCTION = os.getenv("ENV") == "production"
 
 
@@ -122,7 +123,6 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = "users.CustomUser"
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -243,7 +243,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 
+
 if PRODUCTION:
+    print("Running in production")
     FTP_HOST = os.getenv("FTP_SERVER")
     FTP_USERNAME = os.getenv("FTP_USERNAME")
     FTP_PASSWORD = os.getenv("FTP_PASSWORD")
@@ -284,7 +286,7 @@ if PRODUCTION:
     DATABASES["default"].update(db_from_env)
 
     #
-if not PRODUCTION:
+else:
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
     STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
     MEDIA_ROOT = os.path.join(BASE_DIR, "media")
