@@ -246,26 +246,29 @@ MEDIA_URL = "/media/"
 
 if PRODUCTION:
     print("Running in production")
-    FTP_HOST = os.getenv("FTP_SERVER")
-    FTP_USERNAME = os.getenv("FTP_USERNAME")
-    FTP_PASSWORD = os.getenv("FTP_PASSWORD")
 
     ASSETS_URL = os.getenv("ASSETS_URL")
     STORAGES = {
         "default": {
-            "BACKEND": "storages.backends.ftp.FTPStorage",
+            "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
-                "base_url": ASSETS_URL,
-                "allow_overwrite": True,
+                "access_key": os.getenv("S3_ACCESS_KEY_ID"),
+                "secret_key": os.getenv("S3_SECRET_ACCESS_KEY"),
+                "bucket_name": os.getenv("S3_BUCKET_NAME"),
+                "endpoint_url": os.getenv("S3_ENDPOINT_URL"),
+                "custom_domain": os.getenv("S3_CUSTOM_DOMAIN"),
+                "location": "public",
             },
         },
         "staticfiles": {
-            "BACKEND": "storages.backends.ftp.FTPStorage",
+            "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "location": f"ftp://{FTP_USERNAME}:{FTP_PASSWORD}@{FTP_HOST}:21/",
-                "base_url": ASSETS_URL,
-                "allow_overwrite": True,
+                "access_key": os.getenv("S3_ACCESS_KEY_ID"),
+                "secret_key": os.getenv("S3_SECRET_ACCESS_KEY"),
+                "bucket_name": os.getenv("S3_BUCKET_NAME"),
+                "endpoint_url": os.getenv("S3_ENDPOINT_URL"),
+                "custom_domain": os.getenv("S3_CUSTOM_DOMAIN"),
+                "location": "public",
             },
         },
     }
