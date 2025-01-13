@@ -2,8 +2,9 @@ import asyncio
 from pyrogram import Client
 from django.conf import settings
 from django.utils import timezone
-from .models import LaptopPost
+from .models import LaptopPost, TelegramChat, LaptopImage
 from pyrogram.errors import FloodWait
+from typing import List
 import re
 import json
 import google.generativeai as genai
@@ -14,7 +15,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from asgiref.sync import sync_to_async
 from itertools import cycle
-
+from django.core.files.base import ContentFile
 import logging
 
 # Get the logger for your app
@@ -196,6 +197,42 @@ def get_last_message_from_db(channel_id):
     return LaptopPost.objects.filter(channel_id=channel_id).order_by("-post_id").first()
 
 
+@sync_to_async
+def get_channel_list():
+    return list(TelegramChat.objects.all())
+
+
+async def download_mediagroup_images(
+    app: Client, message_id: str | int, channel_id: str | int
+) -> List[ContentFile]:
+    media_group_photos = []
+
+    try:
+        media_group = await app.get_media_group(channel_id, message_id)
+        for media in media_group:
+            if media.photo:
+                try:
+                    file_bytes = await app.download_media(
+                        media.photo.file_id, in_memory=True
+                    )
+                    file_bytes.seek(0)
+                    media_message_id = media.id
+
+                    # Create a unique filename for the photo
+                    file_name = f"telegram_photo_{media_message_id}.jpg"
+
+                    # Save the file as a Django FileField
+
+                    profile_photo_file = ContentFile(file_bytes.read(), name=file_name)
+                    media_group_photos.append(profile_photo_file)
+                except Exception as e:
+                    print(f"Error downloading photo: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error downloading media group images: {str(e)}")
+
+    return media_group_photos
+
+
 async def scrape_laptops_async():
     logger.info("Starting to scrape telegram channels")
     app = Client(
@@ -204,7 +241,8 @@ async def scrape_laptops_async():
         api_hash=settings.TELEGRAM_API_HASH,
         session_string=settings.TELEGRAM_SESSIONS,
     )
-    channels = settings.TELEGRAM_CHANNELS
+    # channels = settings.TELEGRAM_CHANNELS
+    channels = await get_channel_list()
 
     max_messages = 20
 
@@ -214,7 +252,7 @@ async def scrape_laptops_async():
                 logger.info(f"Processing channel: {channel}")
 
                 last_message_from_db = await get_last_message_from_db(
-                    channel_id=channel
+                    channel_id=channel.channel_id
                 )
 
                 last_post_id = (
@@ -228,7 +266,9 @@ async def scrape_laptops_async():
                     should_break = False
                     try:
                         async for message in app.get_chat_history(
-                            chat_id=int(channel), limit=50, offset_id=last_message_id
+                            chat_id=channel.channel_id,
+                            limit=50,
+                            offset_id=last_message_id,
                         ):
                             if message.id in track:
                                 # it will stop it if end of channel messsage
@@ -254,7 +294,7 @@ async def scrape_laptops_async():
 
                             if status:
                                 try:
-                                    await sync_to_async(
+                                    post = await sync_to_async(
                                         LaptopPost.objects.update_or_create
                                     )(
                                         channel_name=message.sender_chat.title
@@ -263,8 +303,25 @@ async def scrape_laptops_async():
                                         posted_at=timezone.make_aware(message.date),
                                         post_id=message.id,
                                         defaults=processed_product,
-                                        channel_id=message.sender_chat.id,
+                                        channel_id=channel,
                                     )
+                                    laptop_post_photos = (
+                                        await download_mediagroup_images(
+                                            app, message.id, message.sender_chat.id
+                                        )
+                                    )
+                                    try:
+                                        for photo in laptop_post_photos:
+                                            await sync_to_async(
+                                                LaptopImage.objects.create
+                                            )(post=post[0], image=photo)
+
+                                    except Exception as e:
+                                        logger.error(
+                                            f"Error saving laptop image to database: {str(e)}"
+                                        )
+                                        raise e
+
                                 except Exception as e:
                                     logger.error(
                                         f"Error saving product to database: {str(e)}"

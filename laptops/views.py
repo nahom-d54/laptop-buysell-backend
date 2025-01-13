@@ -13,6 +13,12 @@ class LaptopResourceView(ReadOnlyModelViewSet):
     authentication_classes = []
     pagination_class = PageNumberPagination
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Add `is_single_retrieval` flag based on the request
+        context["is_single_retrieval"] = self.action == "retrieve"
+        return context
+
 
 class ReviewList(ListAPIView):
     queryset = Review.objects.all()
