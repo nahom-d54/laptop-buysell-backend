@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from .models import LaptopPost, Review
-from .serializers import LaptopPostSerializer, ReviewSerializer
+from .models import LaptopPost, Review, TelegramChat
+from .serializers import LaptopPostSerializer, ReviewSerializer, ChatSerializer
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -32,3 +32,28 @@ class ReviewRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_url_kwarg = "id"
+
+
+class ChatsResourceView(ReadOnlyModelViewSet):
+    queryset = TelegramChat.objects.all()
+    serializer_class = ChatSerializer
+    permission_classes = []
+    authentication_classes = []
+    pagination_class = PageNumberPagination
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Add `is_single_retrieval` flag based on the request
+        context["is_single_retrieval"] = self.action == "retrieve"
+        return context
+
+
+class ChatPosts(ListAPIView):
+    queryset = LaptopPost.objects.all()
+    serializer_class = LaptopPostSerializer
+    pagination_class = PageNumberPagination
+    permission_classes = []
+    authentication_classes = []
+
+    def get_queryset(self):
+        return super().get_queryset().filter(channel_id=self.kwargs.get("channel_id"))
