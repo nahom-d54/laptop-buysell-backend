@@ -31,6 +31,7 @@ jmespath==1.0.1
 packaging==24.2
 paramiko==3.5.0
 phonenumbers==8.13.52
+pillow==11.1.0
 proto-plus==1.25.0
 protobuf==5.29.2
 psycopg2-binary==2.9.10
