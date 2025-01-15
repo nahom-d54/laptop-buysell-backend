@@ -107,10 +107,16 @@ class Review(models.Model):
 
 class SimilarityScore(models.Model):
     item_a = models.ForeignKey(
-        "LaptopPost", on_delete=models.CASCADE, related_name="similarity_scores_as_a"
+        "LaptopPost",
+        on_delete=models.CASCADE,
+        related_name="similarity_scores_as_a",
+        db_index=True,
     )
     item_b = models.ForeignKey(
-        "LaptopPost", on_delete=models.CASCADE, related_name="similarity_scores_as_b"
+        "LaptopPost",
+        on_delete=models.CASCADE,
+        related_name="similarity_scores_as_b",
+        db_index=True,
     )
     score = models.FloatField()
 
