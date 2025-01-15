@@ -36,79 +36,79 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 if PRODUCTION:
     DEBUG = False
 
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "verbose": {
-                "format": "{levelname} {asctime} {module} {message}",
-                "style": "{",
-            },
-            "simple": {
-                "format": "{levelname} {message}",
-                "style": "{",
-            },
-        },
-        "handlers": {
-            "console": {
-                "level": "DEBUG",
-                "class": "logging.StreamHandler",
-                "formatter": "simple",
-            }
-        },
-        "loggers": {
-            "django": {
-                "handlers": ["console"],
-                "level": "INFO",
-                "propagate": True,
-            },
-            "laptops": {  # Replace 'my_app' with your app name
-                "handlers": ["console"],
-                "level": "DEBUG",
-                "propagate": False,
-            },
-        },
-    }
-else:
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "verbose": {
-                "format": "{levelname}: {asctime} {module} {message}",
-                "style": "{",
-            },
-            "simple": {
-                "format": "{levelname}: {message}",
-                "style": "{",
-            },
-        },
-        "handlers": {
-            "console": {
-                "level": "DEBUG",
-                "class": "logging.StreamHandler",
-                "formatter": "simple",
-            },
-            "file": {
-                "level": "WARNING",
-                "class": "logging.FileHandler",
-                "filename": os.path.join(BASE_DIR, "logs/django.log"),
-                "formatter": "verbose",
-            },
-        },
-        "loggers": {
-            "django": {
-                "handlers": ["console", "file"],
-                "level": "INFO",
-                "propagate": True,
-            },
-            "laptops": {  # Replace 'my_app' with your app name
-                "handlers": ["console", "file"],
-                "level": "DEBUG",
-                "propagate": False,
-            },
-        },
-    }
+#     LOGGING = {
+#         "version": 1,
+#         "disable_existing_loggers": False,
+#         "formatters": {
+#             "verbose": {
+#                 "format": "{levelname} {asctime} {module} {message}",
+#                 "style": "{",
+#             },
+#             "simple": {
+#                 "format": "{levelname} {message}",
+#                 "style": "{",
+#             },
+#         },
+#         "handlers": {
+#             "console": {
+#                 "level": "DEBUG",
+#                 "class": "logging.StreamHandler",
+#                 "formatter": "simple",
+#             }
+#         },
+#         "loggers": {
+#             "django": {
+#                 "handlers": ["console"],
+#                 "level": "INFO",
+#                 "propagate": True,
+#             },
+#             "laptops": {  # Replace 'my_app' with your app name
+#                 "handlers": ["console"],
+#                 "level": "DEBUG",
+#                 "propagate": False,
+#             },
+#         },
+#     }
+# else:
+#     LOGGING = {
+#         "version": 1,
+#         "disable_existing_loggers": False,
+#         "formatters": {
+#             "verbose": {
+#                 "format": "{levelname}: {asctime} {module} {message}",
+#                 "style": "{",
+#             },
+#             "simple": {
+#                 "format": "{levelname}: {message}",
+#                 "style": "{",
+#             },
+#         },
+#         "handlers": {
+#             "console": {
+#                 "level": "DEBUG",
+#                 "class": "logging.StreamHandler",
+#                 "formatter": "simple",
+#             },
+#             "file": {
+#                 "level": "WARNING",
+#                 "class": "logging.FileHandler",
+#                 "filename": os.path.join(BASE_DIR, "logs/django.log"),
+#                 "formatter": "verbose",
+#             },
+#         },
+#         "loggers": {
+#             "django": {
+#                 "handlers": ["console", "file"],
+#                 "level": "INFO",
+#                 "propagate": True,
+#             },
+#             "laptops": {  # Replace 'my_app' with your app name
+#                 "handlers": ["console", "file"],
+#                 "level": "DEBUG",
+#                 "propagate": False,
+#             },
+#         },
+#     }
 
 
 INSTALLED_APPS = [
