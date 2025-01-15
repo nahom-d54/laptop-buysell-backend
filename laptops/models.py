@@ -6,18 +6,18 @@ User = get_user_model()
 
 
 class LaptopPost(models.Model):
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, db_index=True)
 
-    storage = models.CharField(max_length=255, null=True, blank=True)
-    processor = models.CharField(max_length=255, null=True, blank=True)
-    graphics = models.CharField(max_length=255, null=True, blank=True)
-    display = models.CharField(max_length=255, null=True, blank=True)
-    ram = models.CharField(max_length=255, null=True, blank=True)
-    battrey = models.CharField(max_length=255, null=True, blank=True)
+    storage = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    processor = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    graphics = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    display = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    ram = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    battrey = models.CharField(max_length=255, null=True, blank=True, db_index=True)
 
-    status = models.CharField(max_length=40, null=True, blank=True)
+    status = models.CharField(max_length=40, null=True, blank=True, db_index=True)
 
-    color = models.CharField(max_length=20, null=True, blank=True)
+    color = models.CharField(max_length=20, null=True, blank=True, db_index=True)
 
     description = models.TextField(null=True, blank=True)
     price = models.CharField(max_length=50, null=True, blank=True)
@@ -103,3 +103,25 @@ class Review(models.Model):
             "product",
             "user",
         )  # Prevent duplicate reviews by the same user for the same product
+
+
+class SimilarityScore(models.Model):
+    item_a = models.ForeignKey(
+        "LaptopPost", on_delete=models.CASCADE, related_name="similarity_scores_as_a"
+    )
+    item_b = models.ForeignKey(
+        "LaptopPost", on_delete=models.CASCADE, related_name="similarity_scores_as_b"
+    )
+    score = models.FloatField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item_a", "item_b"], name="unique_similarity_score"
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.item_a.id > self.item_b.id:
+            self.item_a, self.item_b = self.item_b, self.item_a
+        super().save(*args, **kwargs)
