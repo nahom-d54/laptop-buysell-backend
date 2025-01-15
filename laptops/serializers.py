@@ -72,6 +72,7 @@ class LaptopPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = LaptopPost
         fields = (
+            "id",
             "title",
             "storage",
             "processor",
