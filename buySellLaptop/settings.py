@@ -26,9 +26,9 @@ ALLOWED_HOSTS = ["127.0.0.1"]
 
 ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS", "").split(",")
 
-CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "laptops.nahom.eu.org").split(
-    ","
-)
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    "CSRF_TRUSTED_ORIGINS", "https://laptops.nahom.eu.org"
+).split(",")
 
 
 # Application definition
