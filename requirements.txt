@@ -28,6 +28,7 @@ gunicorn==23.0.0
 httplib2==0.22.0
 idna==3.10
 jmespath==1.0.1
+Levenshtein==0.26.1
 packaging==24.2
 paramiko==3.5.0
 phonenumbers==8.13.52
@@ -48,6 +49,8 @@ Pyrogram==2.0.106
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
+python-Levenshtein==0.26.1
+RapidFuzz==3.11.0
 requests==2.32.3
 rsa==4.9
 s3transfer==0.10.4
