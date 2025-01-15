@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import LaptopPost, Review, LaptopImage, TelegramChat
+from .models import LaptopPost, Review, LaptopImage, TelegramChat, SimilarityScore
 from rest_framework.reverse import reverse
 
 
@@ -36,15 +36,61 @@ class ChatSerializer(serializers.ModelSerializer):
         return f"/api/chat/{obj.channel_id}"
 
 
-class LaptopPostSerializer(serializers.ModelSerializer):
-    reviews = ReviewSerializer(many=True, read_only=True)
-    average_rating = serializers.SerializerMethodField()
+class LaptopSimmilarPostSerializer(serializers.ModelSerializer):
     images = LaptopImageSerializer(many=True, read_only=True)
     channel = serializers.SerializerMethodField()
 
     class Meta:
         model = LaptopPost
-        exclude = ("channel_id", "channel_name")
+        exclude = ("channel_id", "description", "created_at", "updated_at", "post_id")
+
+    def get_channel(self, obj):
+        return reverse(
+            "chat-detail",
+            args=[obj.channel_id.channel_id],
+            request=self.context.get("request"),
+        )
+
+
+class SimilarityScoreSerializer(serializers.ModelSerializer):
+    similar_laptop = LaptopSimmilarPostSerializer(
+        source="item_b", read_only=True
+    )  # Renamed field to `similar_laptop`
+
+    class Meta:
+        model = SimilarityScore
+        fields = ("score", "similar_laptop")  # Updated field names
+
+
+class LaptopPostSerializer(serializers.ModelSerializer):
+    reviews = ReviewSerializer(many=True, read_only=True)
+    average_rating = serializers.SerializerMethodField()
+    images = LaptopImageSerializer(many=True, read_only=True)
+    channel = serializers.SerializerMethodField()
+    simmilar_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LaptopPost
+        fields = (
+            "title",
+            "storage",
+            "processor",
+            "graphics",
+            "display",
+            "ram",
+            "battrey",
+            "status",
+            "description",
+            "price",
+            "channel_name",
+            "posted_at",
+            "reviews",
+            "average_rating",
+            "images",
+            "color",
+            "channel",
+            "simmilar_items",
+        )
 
     def get_average_rating(self, obj):
         reviews = obj.reviews.all()
@@ -59,6 +105,14 @@ class LaptopPostSerializer(serializers.ModelSerializer):
             request=self.context.get("request"),
         )
 
+    def get_simmilar_items(self, obj):
+        item_id = obj.id
+        similar_items = SimilarityScore.objects.filter(item_a_id=item_id).order_by(
+            "-score"
+        )[:10]
+        # Serialize the SimilarityScore objects for the top 10 similar items
+        return SimilarityScoreSerializer(similar_items, many=True).data
+
     def to_representation(self, instance):
         # Call the parent method to get the initial representation
         representation = super().to_representation(instance)
@@ -70,4 +124,5 @@ class LaptopPostSerializer(serializers.ModelSerializer):
         else:
             # Exclude `reviews` from the output
             representation.pop("reviews", None)
+            representation.pop("simmilar_items", None)
             return representation
