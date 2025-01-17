@@ -4,6 +4,7 @@ from .serializers import LaptopPostSerializer, ReviewSerializer, ChatSerializer
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django.db.models import Q
 
 
 class LaptopResourceView(ReadOnlyModelViewSet):
@@ -18,6 +19,33 @@ class LaptopResourceView(ReadOnlyModelViewSet):
         # Add `is_single_retrieval` flag based on the request
         context["is_single_retrieval"] = self.action == "retrieve"
         return context
+
+    def get_queryset(self):
+        query = self.request.query_params.get("query")
+        query_types = self.request.query_params.get("type").split(",")
+        query_filter_types = {
+            "storage": Q(storage__icontains=query),
+            "processor": Q(processor__icontains=query),
+            "graphics": Q(graphics__icontains=query),
+            "display": Q(display__icontains=query),
+            "ram": Q(ram__icontains=query),
+            "battrey": Q(battrey__icontains=query),
+            "status": Q(status__icontains=query),
+            "color": Q(color__icontains=query),
+            "description": Q(description__icontains=query),
+        }
+
+        query_filter = Q(title__icontains=query) | Q(description__icontains=query)
+        if query_types:
+            for query_type in query_types:
+                if query_type in query_filter_types:
+                    query_filter |= query_filter_types.get(query_type)
+
+        return (
+            super().get_queryset().filter(query_filter)
+            if query
+            else super().get_queryset()
+        )
 
 
 class ReviewList(ListAPIView):
