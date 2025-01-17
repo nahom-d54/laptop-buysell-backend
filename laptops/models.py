@@ -41,7 +41,7 @@ class LaptopImage(models.Model):
     post = models.ForeignKey(
         LaptopPost, related_name="images", on_delete=models.CASCADE
     )
-    image = models.ImageField(upload_to="telegram_assets/laptop_images/")
+    image = models.ImageField(upload_to="telegram_assets/laptop_images/", unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
