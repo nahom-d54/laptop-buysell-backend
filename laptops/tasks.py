@@ -219,7 +219,7 @@ async def download_mediagroup_images(
                     media_message_id = media.id
 
                     # Create a unique filename for the photo
-                    file_name = f"telegram_photo_{media_message_id}.jpg"
+                    file_name = f"telegram_photo_{media_message_id}{channel_id}.jpg"
 
                     # Save the file as a Django FileField
 
