@@ -21,8 +21,8 @@ class LaptopResourceView(ReadOnlyModelViewSet):
         return context
 
     def get_queryset(self):
-        query = self.request.query_params.get("query")
-        query_types = self.request.query_params.get("type").split(",")
+        query = self.request.query_params.get("q")
+        query_types = self.request.query_params.get("type", "").split(",")
         query_filter_types = {
             "storage": Q(storage__icontains=query),
             "processor": Q(processor__icontains=query),
