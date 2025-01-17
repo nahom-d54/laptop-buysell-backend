@@ -28,6 +28,8 @@ jobs:
         local-dir: ./
         exclude: |
             **/*.map # Exclude source maps
-            **/node_modules/** # Exclude node_modules
+            **/__pycache__
             **/.git/** # Exclude git files
+            .git/
+            .git/**
       
