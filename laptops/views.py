@@ -22,6 +22,8 @@ class LaptopResourceView(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         query = self.request.query_params.get("q")
+        tokens = query.split()
+
         query_types = self.request.query_params.get("type", "").split(",")
         query_filter_types = {
             "storage": Q(storage__icontains=query),
@@ -35,7 +37,10 @@ class LaptopResourceView(ReadOnlyModelViewSet):
             "description": Q(description__icontains=query),
         }
 
-        query_filter = Q(title__icontains=query) | Q(description__icontains=query)
+        # query_filter = Q(title__icontains=query) | Q(description__icontains=query)
+        query_filter = Q()
+        for token in tokens:
+            query_filter &= Q(title__icontains=token) | Q(description__icontains=token)
         if query_types:
             for query_type in query_types:
                 if query_type in query_filter_types:
