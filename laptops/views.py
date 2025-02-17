@@ -21,7 +21,7 @@ class LaptopResourceView(ReadOnlyModelViewSet):
         return context
 
     def get_queryset(self):
-        query = self.request.query_params.get("q")
+        query = self.request.query_params.get("q", "")
         tokens = query.split()
 
         query_types = self.request.query_params.get("type", "").split(",")
