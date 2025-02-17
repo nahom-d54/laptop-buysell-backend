@@ -48,7 +48,9 @@ class LaptopResourceView(ReadOnlyModelViewSet):
                     query_filter |= query_filter_types.get(query_type)
 
         return (
-            super().get_queryset().filter(query_filter)
+            super()
+            .get_queryset()
+            .filter(query_filter, price__isnull=retrieve_null_price)
             if query
             else super().get_queryset().filter(price__isnull=retrieve_null_price)
         )
