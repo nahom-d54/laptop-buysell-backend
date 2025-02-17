@@ -22,6 +22,7 @@ class LaptopResourceView(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         query = self.request.query_params.get("q", "")
+        retrieve_null_price = self.request.query_params.get("null_price", False)
         tokens = query.split()
 
         query_types = self.request.query_params.get("type", "").split(",")
@@ -49,7 +50,7 @@ class LaptopResourceView(ReadOnlyModelViewSet):
         return (
             super().get_queryset().filter(query_filter)
             if query
-            else super().get_queryset()
+            else super().get_queryset().filter(price__isnull=retrieve_null_price)
         )
 
 
