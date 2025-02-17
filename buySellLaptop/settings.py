@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-8p6te)s!5%98r)jtlct08os3%lbh(c$ab+g*)w!s-z40bv@!d6"
+SECRET_KEY = "8p6te)08os3%lbh(c$ab+g*)w!s-z40bv@!d6"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -124,6 +124,7 @@ INSTALLED_APPS = [
     "laptops",
     "users",
     "storages",
+    "corsheaders",
 ]
 
 AUTH_USER_MODEL = "users.CustomUser"
@@ -161,11 +162,18 @@ GEMENI_API_KEY = os.getenv("GEMENI_API_KEY", "").split(",")
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://laptophub.pro.et",
+    "http://localhost:5173",
+    "http://laptophub.pro.et",
 ]
 
 
