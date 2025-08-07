@@ -2,8 +2,9 @@ import asyncio
 from pyrogram import Client
 from django.conf import settings
 from django.utils import timezone
-from .models import LaptopPost, TelegramChat, LaptopImage
+from .models import LaptopPost, TelegramChat, LaptopImage, MentionTracker
 from pyrogram.errors import FloodWait
+from pyrogram.types import Dialog
 from typing import List
 import re
 import json
@@ -378,3 +379,188 @@ def start_scheduler():
         replace_existing=True,
     )
     scheduler.start()
+
+
+@sync_to_async
+def save_mention_tracker(channel, message_id, mention_text, unread_count):
+    """Save mention tracker data to database"""
+    try:
+        mention, created = MentionTracker.objects.update_or_create(
+            channel=channel,
+            message_id=message_id,
+            defaults={
+                "mention_text": mention_text,
+                "unread_count": unread_count,
+                "is_processed": False,
+                "is_read": False,
+            },
+        )
+        return mention, created
+    except Exception as e:
+        logger.error(f"Error saving mention tracker: {str(e)}")
+        return None, False
+
+
+@sync_to_async
+def mark_mention_processed(mention_id):
+    """Mark a mention as processed"""
+    try:
+        mention = MentionTracker.objects.get(id=mention_id)
+        mention.is_processed = True
+        mention.processed_at = timezone.now()
+        mention.save()
+        return True
+    except MentionTracker.DoesNotExist:
+        logger.error(f"Mention with id {mention_id} not found")
+        return False
+    except Exception as e:
+        logger.error(f"Error marking mention as processed: {str(e)}")
+        return False
+
+
+@sync_to_async
+def mark_mention_read(mention_id):
+    """Mark a mention as read"""
+    try:
+        mention = MentionTracker.objects.get(id=mention_id)
+        mention.is_read = True
+        mention.marked_read_at = timezone.now()
+        mention.save()
+        return True
+    except MentionTracker.DoesNotExist:
+        logger.error(f"Mention with id {mention_id} not found")
+        return False
+    except Exception as e:
+        logger.error(f"Error marking mention as read: {str(e)}")
+        return False
+
+
+@sync_to_async
+def get_unprocessed_mentions():
+    """Get unprocessed mentions from database"""
+    return list(MentionTracker.objects.filter(is_processed=False))
+
+
+async def process_mentions_for_dialog(app: Client, dialog: Dialog, channel):
+    """Process mentions for a specific dialog"""
+    try:
+        # Check if there are unread mentions
+        if dialog.unread_mentions_count > 0:
+            logger.info(f"Found {dialog.unread_mentions_count} unread mentions in {channel.title}")
+            
+            # Get recent messages that might contain mentions
+            async for message in app.get_chat_history(
+                chat_id=dialog.chat.id,
+                limit=dialog.unread_mentions_count * 2  # Get a few more to ensure we catch all
+            ):
+                # Check if message contains mentions (looking for @mentions or replies)
+                mention_text = ""
+                if message.text:
+                    mention_text = message.text
+                elif message.caption:
+                    mention_text = message.caption
+                
+                if mention_text and ("@" in mention_text or message.reply_to_message):
+                    # Save the mention to track it
+                    mention, created = await save_mention_tracker(
+                        channel=channel,
+                        message_id=message.id,
+                        mention_text=mention_text,
+                        unread_count=dialog.unread_mentions_count
+                    )
+                    
+                    if created:
+                        logger.info(f"New mention tracked: {message.id} in {channel.title}")
+                    
+                    # Process the mention (similar to existing message processing)
+                    if mention_text:
+                        status, processed_product = await process_product(mention_text)
+                        
+                        if status:
+                            # Save as laptop post if it's a valid laptop mention
+                            try:
+                                await sync_to_async(LaptopPost.objects.update_or_create)(
+                                    channel_name=dialog.chat.title or "Unknown",
+                                    posted_at=timezone.make_aware(message.date),
+                                    post_id=message.id,
+                                    defaults=processed_product,
+                                    channel_id=channel,
+                                )
+                                logger.info(f"Processed mention as laptop post: {message.id}")
+                            except Exception as e:
+                                logger.error(f"Error saving mention as laptop post: {str(e)}")
+                        
+                        # Mark as processed
+                        if mention:
+                            await mark_mention_processed(mention.id)
+                    
+            # Mark dialog as read to clear unread mentions count
+            try:
+                await app.read_chat_history(dialog.chat.id)
+                logger.info(f"Marked chat history as read for {channel.title}")
+                
+                # Update all mentions for this channel as read
+                unprocessed_mentions = await get_unprocessed_mentions()
+                for mention in unprocessed_mentions:
+                    if mention.channel_id == channel.channel_id:
+                        await mark_mention_read(mention.id)
+                        
+            except Exception as e:
+                logger.error(f"Error marking chat as read: {str(e)}")
+                
+    except Exception as e:
+        logger.error(f"Error processing mentions for dialog: {str(e)}")
+
+
+async def listen_to_mentions_async():
+    """
+    Listen to channels and process unread mentions using Dialog.
+    
+    This function:
+    1. Connects to Telegram using the configured client
+    2. Iterates through all dialogs (conversations)
+    3. For each dialog matching a channel in our database:
+       - Checks unread_mentions_count using pyrogram.types.Dialog
+       - Fetches messages containing mentions (@mentions or replies)
+       - Processes mentions similar to regular message processing
+       - Saves mentions to MentionTracker model for tracking
+       - Marks processed mentions and marks dialog as read
+    
+    This implements the core requirement to listen to channels and use
+    pyrogram.types.Dialog to query unread_mentions_count.
+    """
+    logger.info("Starting to listen for mentions in telegram channels")
+    
+    app = Client(
+        "MentionListener",
+        api_id=settings.TELEGRAM_API_ID,
+        api_hash=settings.TELEGRAM_API_HASH,
+        session_string=settings.TELEGRAM_SESSIONS,
+    )
+    
+    channels = await get_channel_list()
+    
+    try:
+        async with app:
+            # Get all dialogs (conversations)
+            async for dialog in app.get_dialogs():
+                # Find matching channel in our database
+                matching_channel = None
+                for channel in channels:
+                    if dialog.chat.id == channel.channel_id:
+                        matching_channel = channel
+                        break
+                
+                if matching_channel:
+                    await process_mentions_for_dialog(app, dialog, matching_channel)
+                    
+                    # Add a small delay to avoid hitting rate limits
+                    await asyncio.sleep(0.5)
+                    
+    except Exception as e:
+        logger.error(f"Error in mention listener: {str(e)}")
+
+
+def listen_to_mentions():
+    """Synchronous wrapper for mention listening"""
+    asyncio.run(listen_to_mentions_async())
