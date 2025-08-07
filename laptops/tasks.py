@@ -513,7 +513,22 @@ async def process_mentions_for_dialog(app: Client, dialog: Dialog, channel):
 
 
 async def listen_to_mentions_async():
-    """Listen to channels and process unread mentions using Dialog"""
+    """
+    Listen to channels and process unread mentions using Dialog.
+    
+    This function:
+    1. Connects to Telegram using the configured client
+    2. Iterates through all dialogs (conversations)
+    3. For each dialog matching a channel in our database:
+       - Checks unread_mentions_count using pyrogram.types.Dialog
+       - Fetches messages containing mentions (@mentions or replies)
+       - Processes mentions similar to regular message processing
+       - Saves mentions to MentionTracker model for tracking
+       - Marks processed mentions and marks dialog as read
+    
+    This implements the core requirement to listen to channels and use
+    pyrogram.types.Dialog to query unread_mentions_count.
+    """
     logger.info("Starting to listen for mentions in telegram channels")
     
     app = Client(
