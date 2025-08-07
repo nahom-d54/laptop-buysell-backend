@@ -131,3 +131,25 @@ class SimilarityScore(models.Model):
         if self.item_a.id > self.item_b.id:
             self.item_a, self.item_b = self.item_b, self.item_a
         super().save(*args, **kwargs)
+
+
+class MentionTracker(models.Model):
+    channel = models.ForeignKey(
+        TelegramChat, related_name="mentions", on_delete=models.CASCADE
+    )
+    message_id = models.BigIntegerField()
+    mention_text = models.TextField()
+    unread_count = models.PositiveIntegerField()
+    is_processed = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    marked_read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ["channel", "message_id"]
+
+    def __str__(self):
+        return f"Mention in {self.channel.title} - Message {self.message_id}"
